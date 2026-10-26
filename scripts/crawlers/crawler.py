@@ -35,6 +35,9 @@ KNOWN_CATEGORIES = {
     "case": "https://pcmarket.vn/case-vo-may-tinh.html",
     "cooling": "https://pcmarket.vn/tan-nhiet-cooling.html",
     "monitor": "https://pcmarket.vn/monitor-man-hinh.html",
+    "keyboard": "https://pcmarket.vn/ban-phim-choi-game.html",
+    "mouse": "https://pcmarket.vn/chuot-choi-game.html",
+    "headphone": "https://pcmarket.vn/tai-nghe-choi-game.html",
 }
 
 class PCMarketCrawler:
@@ -109,16 +112,44 @@ class PCMarketCrawler:
             if a.get_text(strip=True)
         ]
 
-        # Technical Specifications
+        # Technical Specifications (supports both standard specs and prebuilt PC component tables)
         specs = {}
-        spec_table = soup.find('table', class_=lambda c: not c or 'pro-info-price' not in c)
-        if spec_table:
+        for spec_table in soup.find_all('table', class_=lambda c: not c or 'pro-info-price' not in c):
             for tr in spec_table.find_all('tr'):
                 tds = tr.find_all(['td', 'th'])
-                if len(tds) >= 2:
+                if len(tds) >= 4 and tds[0].get_text(strip=True).isdigit():
+                    stt = tds[0].get_text(strip=True)
+                    desc = tds[1].get_text(strip=True)
+                    qty = tds[2].get_text(strip=True)
+                    bh = tds[3].get_text(strip=True)
+                    dl = desc.lower()
+                    if any(k in dl for k in ['cpu', 'ryzen', 'core i', 'core ultra', 'xeon', 'intel core', 'athlon']):
+                        part = "CPU"
+                    elif any(k in dl for k in ['mainboard', 'bo mạch', 'a520', 'b760', 'b650', 'z790', 'z890', 'h610', 'b760m', 'b550']):
+                        part = "Mainboard"
+                    elif 'ram' in dl:
+                        part = "RAM"
+                    elif any(k in dl for k in ['ssd', 'nvme', 'ổ cứng', 'hdd', 'm.2']):
+                        part = "Ổ cứng"
+                    elif any(k in dl for k in ['vga', 'card màn hình', 'rtx', 'gtx', 'radeon', 'rx ']):
+                        part = "VGA"
+                    elif any(k in dl for k in ['nguồn', 'psu']):
+                        part = "Nguồn (PSU)"
+                    elif any(k in dl for k in ['vỏ', 'case']):
+                        part = "Vỏ Case"
+                    elif any(k in dl for k in ['tản', 'cooler', 'aio']):
+                        part = "Tản nhiệt"
+                    elif any(k in dl for k in ['màn hình', 'monitor']):
+                        part = "Màn hình"
+                    else:
+                        part = f"Linh kiện {stt}"
+
+                    key = part if part not in specs else f"{part} {stt}"
+                    specs[key] = f"{desc} (SL: {qty}, BH: {bh})"
+                elif len(tds) >= 2:
                     key = tds[0].get_text(strip=True)
                     val = tds[1].get_text(strip=True)
-                    if key and val:
+                    if key and val and key not in ['STT', 'Mô tả thiết bị', 'Mô tả']:
                         specs[key] = val
 
         # Brand extraction (check multiple keys or title heuristics)
@@ -130,11 +161,14 @@ class PCMarketCrawler:
         )
         if not brand and title:
             known_brands = [
-                "ASUS", "ROG", "GIGABYTE", "AORUS", "MSI", "COLORFUL", "IGAME",
+                "PCM", "ASUS", "ROG", "TUF", "GIGABYTE", "AORUS", "MSI", "COLORFUL", "IGAME",
                 "ZOTAC", "GALAX", "INNO3D", "PALIT", "SAPPHIRE", "LEADTEK",
                 "JGINYUE", "INTEL", "AMD", "CORSAIR", "KINGSTON", "GSKILL",
                 "SAMSUNG", "WESTERN DIGITAL", "SEAGATE", "COOLER MASTER", "NZXT",
-                "AFOX", "BIOSTAR", "PNY", "OCPC", "YESTON"
+                "AFOX", "BIOSTAR", "PNY", "OCPC", "YESTON",
+                "LOGITECH", "RAZER", "STEELSERIES", "HYPERX", "AKKO", "DAREU",
+                "AULA", "LEOBOG", "LEOPOLD", "IKBC", "FUHLEN", "E-DRA", "EDRA",
+                "ZOWIE", "PULSAR", "ENDGAME GEAR", "KEYCHRON", "FL-ESPORTS", "MONSGEEK", "SENNHEISER"
             ]
             for kb in known_brands:
                 if re.search(rf'\b{re.escape(kb)}\b', title, re.IGNORECASE):

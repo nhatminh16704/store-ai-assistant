@@ -27,6 +27,9 @@ CATEGORY_METADATA = {
     "case": {"name": "Vỏ máy tính - Case", "seo_name": "case-vo-may-tinh", "code": "CASE"},
     "cooling": {"name": "Tản nhiệt - Cooling", "seo_name": "tan-nhiet-cooling", "code": "COOL"},
     "monitor": {"name": "Màn hình máy tính", "seo_name": "monitor-man-hinh", "code": "MON"},
+    "keyboard": {"name": "Bàn phím chơi game", "seo_name": "ban-phim-choi-game", "code": "KB"},
+    "mouse": {"name": "Chuột chơi game", "seo_name": "chuot-choi-game", "code": "MOU"},
+    "headphone": {"name": "Tai nghe chơi game", "seo_name": "tai-nghe-choi-game", "code": "HP"},
 }
 
 def generate_uuidv7():
@@ -73,7 +76,10 @@ def normalize_brand(brand_raw: str, title: str) -> str:
             "SAPPHIRE", "LEADTEK", "INTEL", "AMD", "CORSAIR", "KINGSTON", "GSKILL",
             "SAMSUNG", "WESTERN DIGITAL", "SEAGATE", "COOLER MASTER", "NZXT", "XIGMATEK",
             "DEEPCOOL", "ID-COOLING", "THERMALRIGHT", "LIAN LI", "JONSBO", "SAMA", "MIK",
-            "AOC", "LG", "DELL", "VIEWSONIC", "ACER", "PHILIPS", "HIKVISION", "DAHUA"
+            "AOC", "LG", "DELL", "VIEWSONIC", "ACER", "PHILIPS", "HIKVISION", "DAHUA",
+            "LOGITECH", "RAZER", "STEELSERIES", "HYPERX", "AKKO", "DAREU", "AULA",
+            "LEOBOG", "LEOPOLD", "IKBC", "FUHLEN", "E-DRA", "EDRA", "ZOWIE", "PULSAR",
+            "ENDGAME GEAR", "KEYCHRON", "FL-ESPORTS", "MONSGEEK", "SENNHEISER"
         ]
         for kb in known:
             if re.search(rf'\b{re.escape(kb)}\b', title, re.IGNORECASE):
@@ -86,7 +92,9 @@ def normalize_brand(brand_raw: str, title: str) -> str:
         "intel": "Intel", "nzxt": "NZXT", "xigmatek": "Xigmatek", "corsair": "Corsair",
         "kingston": "Kingston", "samsung": "Samsung", "western digital": "Western Digital",
         "seagate": "Seagate", "colorful": "Colorful", "zotac": "ZOTAC", "galax": "GALAX",
-        "inno3d": "INNO3D", "palit": "Palit", "sapphire": "Sapphire", "asrock": "ASRock"
+        "inno3d": "INNO3D", "palit": "Palit", "sapphire": "Sapphire", "asrock": "ASRock",
+        "logitech": "Logitech", "razer": "Razer", "steelseries": "SteelSeries", "hyperx": "HyperX",
+        "akko": "Akko", "dareu": "DareU", "e-dra": "E-Dra", "fuhlen": "Fuhlen", "zowie": "Zowie"
     }
     return upper_map.get(b.lower(), b.title())
 
@@ -121,11 +129,24 @@ def main():
     total_raw_items = 0
     sku_counter = 1000
 
+    SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+    PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "../.."))
+    RAW_COMP_DIR = os.path.join(PROJECT_ROOT, "data", "raw", "components")
+    RAW_GEAR_DIR = os.path.join(PROJECT_ROOT, "data", "raw", "gears")
+    SEED_DIR = os.path.join(PROJECT_ROOT, "data", "seed")
+    os.makedirs(SEED_DIR, exist_ok=True)
+
     for cat_key, cat_meta in CATEGORY_METADATA.items():
-        json_file = f"{cat_key}_pcmarket.json"
+        fname = f"{cat_key}_pcmarket.json"
+        json_file = os.path.join(RAW_COMP_DIR, fname)
+        if not os.path.exists(json_file):
+            json_file = os.path.join(RAW_GEAR_DIR, fname)
+        if not os.path.exists(json_file):
+            json_file = fname
         if not os.path.exists(json_file):
             print(f"[!] File not found: {json_file}, skipping.")
             continue
+
 
         with open(json_file, 'r', encoding='utf-8') as f:
             items = json.load(f)
@@ -274,9 +295,10 @@ def main():
         "files": list(files_dict.values())
     }
 
-    out_file = "db_seed_data.json"
+    out_file = os.path.join(SEED_DIR, "db_seed_data.json")
     with open(out_file, "w", encoding="utf-8") as f:
         json.dump(output_data, f, ensure_ascii=False, indent=2)
+
 
     print("\n" + "=" * 60)
     print(f"[✓] Successfully created {out_file}!")

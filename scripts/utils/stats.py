@@ -2,7 +2,12 @@ import json, glob, os, sys
 
 sys.stdout.reconfigure(encoding='utf-8')
 
-files = sorted(glob.glob('*_pcmarket.json'))
+# Look in data/raw recursively or current dir
+base_dir = os.path.join(os.path.dirname(__file__), "../../data/raw")
+files = sorted(glob.glob(os.path.join(base_dir, "**/*_pcmarket.json"), recursive=True))
+if not files:
+    files = sorted(glob.glob('*_pcmarket.json'))
+
 print(f"Tổng hợp {len(files)} danh mục linh kiện PC:")
 print("-" * 90)
 print(f"{'Danh mục':<12} | {'Số SP':<6} | {'Dung lượng':<10} | {'Khoảng giá (VND)':<30} | {'Top hãng'}")
@@ -12,8 +17,9 @@ total_all = 0
 total_size = 0
 
 for f in files:
-    cat = f.replace('_pcmarket.json', '')
+    cat = os.path.basename(f).replace('_pcmarket.json', '')
     size_kb = round(os.path.getsize(f) / 1024, 1)
+
     total_size += size_kb
     with open(f, 'r', encoding='utf-8') as fp:
         items = json.load(fp)
