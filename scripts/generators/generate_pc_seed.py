@@ -224,13 +224,14 @@ def main():
                 existing_files[fl["public_url"]] = fl
 
 
-    new_brands = {}
+    used_brands = {}
     new_files = {}
     products = []
     product_variants = []
     product_images = []
     options_map = {} # (name, value) -> dict
     variant_options = []
+
 
     # 1. Build Categories Hierarchy (Parent + 5 Children)
     categories = [
@@ -340,20 +341,20 @@ def main():
             brand_name = normalize_pc_brand(item.get("brand"), raw_title)
             b_key = brand_name.lower()
             if b_key in existing_brands:
-                brand_id = existing_brands[b_key]["id"]
-            elif b_key in new_brands:
-                brand_id = new_brands[b_key]["id"]
+                brand_obj = existing_brands[b_key]
             else:
-                brand_id = generate_uuidv7()
                 brand_obj = {
-                    "id": brand_id,
+                    "id": generate_uuidv7(),
                     "name": brand_name,
                     "seo_name": slugify(brand_name),
                     "description": f"Thương hiệu máy tính {brand_name}",
                     "image_file_id": None,
                     "status": "ACTIVE"
                 }
-                new_brands[b_key] = brand_obj
+                existing_brands[b_key] = brand_obj
+
+            brand_id = brand_obj["id"]
+            used_brands[brand_id] = brand_obj
 
             # Product
             product_id = generate_uuidv7()
@@ -458,7 +459,7 @@ def main():
 
     output_seed = {
         "files": list(new_files.values()),
-        "brands": list(new_brands.values()),
+        "brands": list(used_brands.values()),
         "categories": categories,
         "products": products,
         "options": [],
@@ -474,12 +475,13 @@ def main():
     print("\n" + "="*60)
     print(f"[✓] Created {out_file} successfully!")
     print(f"    - Categories:      {len(categories)} (1 Parent + 5 Children)")
-    print(f"    - New Brands:      {len(new_brands)}")
+    print(f"    - Brands:          {len(used_brands)}")
     print(f"    - Pre-built PCs:   {len(products)}")
     print(f"    - Product Variants:{len(product_variants)}")
     print(f"    - Product Images:  {len(product_images)}")
     print(f"    - New Media Files: {len(new_files)}")
     print("="*60)
+
 
 if __name__ == "__main__":
     main()
